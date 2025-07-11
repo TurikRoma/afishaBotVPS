@@ -33,7 +33,7 @@ ALL_CONFIGS = [
     # kvitki_by_theatre_config,
     # kvitki_by_bolshoi_theatre_config,
     # kvitki_by_circus_config,
-    # kvitki_by_sport_config,
+    kvitki_by_sport_config,
     # kvitki_by_kz_minsk_config,
 
     # --- НОВОЕ: Добавляем конфиги Яндекса в общий список ---
@@ -52,30 +52,30 @@ for target in yandex_sport_targets:
     config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
     ALL_CONFIGS.append(config)
 
-for target in yandex_theatre_targets:
-    config = yandex_sport_base.copy()
-    config.update(target)
-    config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/theatre"
-    config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
-    ALL_CONFIGS.append(config)
+# for target in yandex_theatre_targets:
+#     config = yandex_sport_base.copy()
+#     config.update(target)
+#     config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/theatre"
+#     config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
+#     ALL_CONFIGS.append(config)
 
-for target in yandex_art_targets:
-    config = yandex_sport_base.copy()
-    config.update(target)
-    config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/art"
-    config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
-    ALL_CONFIGS.append(config)
+# for target in yandex_art_targets:
+#     config = yandex_sport_base.copy()
+#     config.update(target)
+#     config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/art"
+#     config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
+#     ALL_CONFIGS.append(config)
 
-for target in yandex_festival_targets:
-    config = yandex_sport_base.copy()
-    config.update(target)
-    config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/festival"
-    config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
-    ALL_CONFIGS.append(config)
+# for target in yandex_festival_targets:
+#     config = yandex_sport_base.copy()
+#     config.update(target)
+#     config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/festival"
+#     config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
+#     ALL_CONFIGS.append(config)
 
-for target in yandex_concert_targets:
-    config = yandex_sport_base.copy()
-    config.update(target)
-    config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/concert"
-    config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
-    ALL_CONFIGS.append(config)
+# for target in yandex_concert_targets:
+#     config = yandex_sport_base.copy()
+#     config.update(target)
+#     config['url'] = f"https://afisha.yandex.ru/{target['url_slug']}/concert"
+#     config['site_name'] = f"Yandex.Afisha (Спорт, {target['city_name']})"
+#     ALL_CONFIGS.append(config)
