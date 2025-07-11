@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from calendar import monthrange
 import requests
 from PIL import Image
+import tempfile
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -387,6 +388,8 @@ def _parse_list_sync(config: dict) -> list[dict]:
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
     options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
+    # Добавляем уникальный user-data-dir
+    options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
     all_events_data, seen_event_links = [], set()
     logger.info(f"Начинаю парсинг списка: {site_name}")
     driver = None
@@ -444,6 +447,8 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    # Добавляем уникальный user-data-dir
+    options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
     driver = None
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
