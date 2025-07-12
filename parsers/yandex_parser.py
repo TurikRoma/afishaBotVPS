@@ -25,7 +25,7 @@ from calendar import monthrange
 import requests
 from PIL import Image
 
-import undetected_chromedriver as uc
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
