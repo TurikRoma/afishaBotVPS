@@ -1,3 +1,17 @@
+Конечно, вот полностью исправленный файл yandex_parser.py со всеми необходимыми изменениями для стабильной работы на вашем VPS.
+
+Ключевые изменения, которые были внесены:
+
+Включен Headless режим (--headless=new): Это основной режим для работы браузера на сервере без графического интерфейса.
+
+Добавлена критическая опция (--disable-dev-shm-usage): Это решает проблемы со сбоями Chrome из-за ограниченного размера разделяемой памяти (/dev/shm) на многих VPS.
+
+Удалено ручное управление профилем: Я убрал строки с tempfile и shutil. Selenium при запуске без указания user-data-dir сам создает временный профиль и автоматически удаляет его после вызова driver.quit(). Это самый надежный и чистый способ, который предотвращает конфликты.
+
+Просто скопируйте весь этот код, вставьте его в ваш файл yandex_parser.py на сервере, сохраните и запустите.
+
+Готовый файл yandex_parser.py
+Generated python
 import asyncio
 import base64
 import io
@@ -26,9 +40,6 @@ from app.database.models import async_session
 
 # Импортируем AI функцию
 from parsers.test_ai import getArtist
-
-import tempfile
-import shutil
 
 # --- 1. ИНИЦИАЛИЗАЦИЯ И КОНСТАНТЫ ---
 logger = logging.getLogger()
@@ -391,16 +402,20 @@ def _wait_for_page_load_and_solve_captcha(driver: webdriver.Chrome, rucaptcha_ap
 def _parse_list_sync(config: dict) -> list[dict]:
     site_name, base_url = config['site_name'], f"{config['url']}?date={datetime.now().strftime('%Y-%m-%d')}&period={config['period']}"
     rucaptcha_api_key, max_pages = config.get('RUCAPTCHA_API_KEY'), config.get('max_pages', 365)
+    
+    # --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА НАСТРОЕК ДРАЙВЕРА ---
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
+    options.add_argument("--headless=new") # ОБЯЗАТЕЛЬНО для сервера
+    options.add_argument("--no-sandbox") # ОБЯЗАТЕЛЬНО для Linux
+    options.add_argument("--disable-dev-shm-usage") # ОБЯЗАТЕЛЬНО для стабильности
     options.add_argument("--window-size=1920,1080")
     options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    user_data_dir = tempfile.mkdtemp()
-    options.add_argument(f"--user-data-dir={user_data_dir}")
+    # Ручное управление профилем УДАЛЕНО. Selenium теперь делает это сам.
+    # --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА НАСТРОЕК ДРАЙВЕРА ---
+
     all_events_data, seen_event_links = [], set()
     logger.info(f"Начинаю парсинг списка: {site_name}")
     driver = None
@@ -409,7 +424,7 @@ def _parse_list_sync(config: dict) -> list[dict]:
         
         # --- ВЫПОЛНЕНИЕ МАСКИРУЮЩЕГО СКРИПТА ---
         try:
-    # Определяем путь к текущему файлу
+            # Определяем путь к текущему файлу
             current_dir = os.path.dirname(os.path.abspath(__file__))
             # Составляем путь к stealth.min.js
             stealth_path = os.path.join(current_dir, 'stealth.min.js')
@@ -426,6 +441,7 @@ def _parse_list_sync(config: dict) -> list[dict]:
             logger.error("❌ Не удалось найти файл stealth.min.js. Маскировка не будет применена.")
         except Exception as e:
             logger.error(f"❌ Ошибка при применении скрипта маскировки: {e}")
+            
         for page_num in range(1, max_pages + 1):
             current_url = f"{base_url}&page={page_num}"
             logger.info(f"Обрабатываю страницу {page_num}/{max_pages}: {current_url}")
@@ -459,18 +475,12 @@ def _parse_list_sync(config: dict) -> list[dict]:
                         if price_match := re.search(r'\d+', price_el.get_text(strip=True).replace(' ', '')):
                             price_min = float(price_match.group(0))
                     
-                    # Парсим дату
                     time_start, time_end = parse_datetime_range(date_str)
                     
-                    # --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
-                    # Если дата начала не определена (т.е. событие "постоянное"),
-                    # мы просто пропускаем это событие и переходим к следующему.
                     if time_start is None:
                         logger.info(f"  -> Пропущено постоянное событие (без даты): '{title}'")
-                        continue # <-- Пропускаем итерацию
-                    # -------------------------
+                        continue
 
-                    # Этот код выполнится только для событий с датой
                     event_dict = {
                         'event_type': config.get('event_type', 'Другое'), 
                         'title': title, 
@@ -482,18 +492,17 @@ def _parse_list_sync(config: dict) -> list[dict]:
                         'time_end': time_end,
                         'city_name': config.get('city_name'),
                         'country_name': config.get('country_name')
-                        # Остальные поля будут добавлены позже, если нужно
                     }
                     all_events_data.append(event_dict)
                     
                 except Exception as e: 
                     logger.warning(f"Ошибка парсинга карточки: {e}")    
             time.sleep(random.uniform(2.0, 4.0))
-    except Exception as e: logger.error(f"Критическая ошибка в парсере списка: {e}", exc_info=True)
+    except Exception as e: 
+        logger.error(f"Критическая ошибка в парсере списка: {e}", exc_info=True)
     finally:
-        if driver: driver.quit()
-        # Удаляем временную директорию профиля
-        shutil.rmtree(user_data_dir, ignore_errors=True)
+        if driver: 
+            driver.quit() # driver.quit() сам удалит временный профиль
     logger.info(f"Парсер списка завершен. Найдено уникальных событий: {len(all_events_data)}")
     return all_events_data
 
@@ -501,14 +510,17 @@ def _parse_list_sync(config: dict) -> list[dict]:
 async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key: str | None) -> list[dict]:
     if not events_to_process: return []
     logger.info(f"Начинаю детальный парсинг для {len(events_to_process)} событий...")
+    
+    # --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА НАСТРОЕК ДРАЙВЕРА ---
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
+    options.add_argument("--headless=new") # ОБЯЗАТЕЛЬНО для сервера
+    options.add_argument("--no-sandbox") # ОБЯЗАТЕЛЬНО для Linux
+    options.add_argument("--disable-dev-shm-usage") # ОБЯЗАТЕЛЬНО для стабильности
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    # Добавляем уникальный user-data-dir
-    user_data_dir = tempfile.mkdtemp()
-    options.add_argument(f"--user-data-dir={user_data_dir}")
+    # Ручное управление профилем УДАЛЕНО. Selenium теперь делает это сам.
+    # --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА НАСТРОЕК ДРАЙВЕРА ---
+
     driver = None
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -521,14 +533,11 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
                 driver.get(link)
                 _wait_for_page_load_and_solve_captcha(driver, rucaptcha_api_key, '[data-test-id*="title"]')
                 
-                # Небольшая пауза для прогрузки динамических элементов
                 time.sleep(random.uniform(1.5, 2.5)) 
 
                 if "afisha.yandex.ru" not in driver.current_url or "error" in driver.current_url:
                     logger.warning(f"    -> Редирект или ошибка на странице: {driver.current_url}. Пропускаю."); continue
                 
-                # --- ИСПРАВЛЕННАЯ ЛОГИКА ---
-                # Шаг 1: Ищем чипы с исполнителями. НЕ используем 'continue'.
                 try:
                     if performer_chips := driver.find_elements(By.CSS_SELECTOR, 'a[data-test-id="personChip.root"]'):
                         event['artists'] = [chip.text.strip() for chip in performer_chips if chip.text.strip()]
@@ -536,15 +545,13 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
                 except NoSuchElementException:
                     logger.info("    -> Чипы с исполнителями не найдены.")
 
-                # Шаг 2: Ищем описание. Этот блок теперь выполняется ВСЕГДА.
                 try:
-                    # Сначала кликаем "Читать полностью", если кнопка есть
                     try:
                         more_button = driver.find_element(By.CSS_SELECTOR, '[data-test-id="eventInfo.more"]')
                         driver.execute_script("arguments[0].click();", more_button)
-                        time.sleep(0.5) # Пауза, чтобы текст успел раскрыться
+                        time.sleep(0.5) 
                     except NoSuchElementException:
-                        pass # Кнопки нет, значит, описание полное или его нет вообще
+                        pass 
 
                     description_element = driver.find_element(By.CSS_SELECTOR, '[data-test-id="eventInfo.description"]')
                     event['full_description'] = description_element.text.strip()
@@ -558,9 +565,8 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
     except Exception as e:
         logger.error(f"Критическая ошибка в парсере деталей: {e}", exc_info=True)
     finally:
-        if driver: driver.quit()
-        # Удаляем временную директорию профиля
-        shutil.rmtree(user_data_dir, ignore_errors=True)
+        if driver: 
+            driver.quit() # driver.quit() сам удалит временный профиль
     logger.info("Детальный парсинг завершен.")
     return events_to_process
 
