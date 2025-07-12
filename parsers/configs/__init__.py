@@ -33,7 +33,7 @@ ALL_CONFIGS = [
     # kvitki_by_theatre_config,
     # kvitki_by_bolshoi_theatre_config,
     # kvitki_by_circus_config,
-    kvitki_by_sport_config,
+    # kvitki_by_sport_config,
     # kvitki_by_kz_minsk_config,
 
     # --- НОВОЕ: Добавляем конфиги Яндекса в общий список ---
