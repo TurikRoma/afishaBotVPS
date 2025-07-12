@@ -28,6 +28,7 @@ from app.database.models import async_session
 from parsers.test_ai import getArtist
 
 import tempfile
+import shutil
 
 # --- 1. ИНИЦИАЛИЗАЦИЯ И КОНСТАНТЫ ---
 logger = logging.getLogger()
@@ -398,8 +399,8 @@ def _parse_list_sync(config: dict) -> list[dict]:
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    # Добавляем уникальный user-data-dir
-    options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
+    user_data_dir = tempfile.mkdtemp()
+    options.add_argument(f"--user-data-dir={user_data_dir}")
     all_events_data, seen_event_links = [], set()
     logger.info(f"Начинаю парсинг списка: {site_name}")
     driver = None
@@ -491,6 +492,8 @@ def _parse_list_sync(config: dict) -> list[dict]:
     except Exception as e: logger.error(f"Критическая ошибка в парсере списка: {e}", exc_info=True)
     finally:
         if driver: driver.quit()
+        # Удаляем временную директорию профиля
+        shutil.rmtree(user_data_dir, ignore_errors=True)
     logger.info(f"Парсер списка завершен. Найдено уникальных событий: {len(all_events_data)}")
     return all_events_data
 
@@ -504,7 +507,8 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     # Добавляем уникальный user-data-dir
-    options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
+    user_data_dir = tempfile.mkdtemp()
+    options.add_argument(f"--user-data-dir={user_data_dir}")
     driver = None
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -555,6 +559,8 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
         logger.error(f"Критическая ошибка в парсере деталей: {e}", exc_info=True)
     finally:
         if driver: driver.quit()
+        # Удаляем временную директорию профиля
+        shutil.rmtree(user_data_dir, ignore_errors=True)
     logger.info("Детальный парсинг завершен.")
     return events_to_process
 

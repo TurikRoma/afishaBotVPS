@@ -3,6 +3,7 @@ import random
 import time
 import requests
 import tempfile
+import shutil
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -23,7 +24,8 @@ class KassirScraper:
         options = webdriver.ChromeOptions()
         options.add_argument("--start-maximized")
         # Добавляем уникальный user-data-dir
-        options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
+        self.user_data_dir = tempfile.mkdtemp()
+        options.add_argument(f"--user-data-dir={self.user_data_dir}")
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
         self.wait = WebDriverWait(self.driver, 15)
 
@@ -159,8 +161,13 @@ class KassirScraper:
             print(f"❌ Ошибка: {e}")
             return []
         finally:
-            self.driver.quit()
+            self.close()
             print("🛑 Браузер закрыт.")
+
+    def close(self):
+        if self.driver:
+            self.driver.quit()
+        shutil.rmtree(self.user_data_dir, ignore_errors=True)
 
 
 if __name__ == '__main__':
