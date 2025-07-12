@@ -2,6 +2,7 @@ import json
 import random
 import time
 import requests
+import tempfile
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -21,6 +22,8 @@ class KassirScraper:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument("--start-maximized")
+        # Добавляем уникальный user-data-dir
+        options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
         self.wait = WebDriverWait(self.driver, 15)
 

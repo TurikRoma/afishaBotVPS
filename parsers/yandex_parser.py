@@ -27,6 +27,8 @@ from app.database.models import async_session
 # Импортируем AI функцию
 from parsers.test_ai import getArtist
 
+import tempfile
+
 # --- 1. ИНИЦИАЛИЗАЦИЯ И КОНСТАНТЫ ---
 logger = logging.getLogger()
 USER_AGENTS = [
@@ -396,6 +398,8 @@ def _parse_list_sync(config: dict) -> list[dict]:
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
+    # Добавляем уникальный user-data-dir
+    options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
     all_events_data, seen_event_links = [], set()
     logger.info(f"Начинаю парсинг списка: {site_name}")
     driver = None
@@ -499,6 +503,8 @@ async def _enrich_details_async(events_to_process: list[dict], rucaptcha_api_key
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    # Добавляем уникальный user-data-dir
+    options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
     driver = None
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
